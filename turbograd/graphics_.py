@@ -1,3 +1,4 @@
+# lets you plot the computational graph
 from graphviz import Digraph
 
 def trace(root):

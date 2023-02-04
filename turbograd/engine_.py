@@ -3,9 +3,7 @@ import math
 import random
 
 
-class Module:
-    def __init__(self) -> None:
-        pass
+
 class Value:
     def __init__(self, data, _children = (), _op = '', label = '') -> None:
         self.data = data
@@ -61,6 +59,13 @@ class Value:
         out._backward = _backward
         return out
         
+    def log(self):
+        x = self.data
+        out = Value(math.log(x), (self, ),"log")
+        def _backward():
+            self.grad +=  (1 / x) * out.grad
+        out.backward = _backward
+        return out
 
     def tanh(self):
         x = self.data
@@ -111,63 +116,24 @@ class Value:
         for node in reversed(toplogical_graph):
             node._backward()
 
+ 
     def __neg__(self):
         return self * -1 
 
     def __sub__(self, other):
         return self + (-other)
+    
     def __radd__(self, other): # other + self
         return self + other
 
+    def __rsub__(self, other): # other - self
+        return other + (-self)
 
-class Neuron:
-    def __init__(self, nin) -> None:
-        self.w = [Value(random.uniform(-1, 1)) for _ in range(nin)]
-        self.b = Value(random.uniform(-1, 1))
+    def __rmul__(self, other): # other * self
+        return self * other
 
-    def __call__(self, x):
-        act = sum( (wi*xi for wi, xi in zip(self.w, x)), self.b) 
-        out = act.tanh()
-        return out
+    def __truediv__(self, other): # self / other
+        return self * other**-1
 
-
-    def parameters(self):
-        return self.w + [self.b]
-
-class Layer:
-    def __init__(self, nin, nout) -> None:
-        self.neurons = [Neuron(nin) for _ in range(nout)]
-
-    def __call__(self, x):
-        outs = [n(x) for n in self.neurons]
-        return outs[0] if len(outs) ==1 else outs
-
-
-    def parameters(self):
-        params = [p for neuron in self.neurons for p in neuron.parameters()]
-        # for neuron in self.neurons:
-        #     ps = neuron.parameters()
-        #     params.extend(ps)
-
-        return params
-
-class MLP:
-    def __init__(self, nin, nouts) -> None:
-        sz = [nin] + nouts
-        self.layers = [Layer(sz[i], sz[i+1]) for i in range(len(nouts))]
-
-    def __call__(self, x):
-        for layer in self.layers:
-            x = layer(x)
-        return x
-    def parameters(self):
-        return [p for layer in self.layers for p in layer.parameters()]
-        # for neuron in self.neurons:
-
-
-
-a = Value(3)
-b = Value (7)
-
-c = a * b
-c.backward()
+    def __rtruediv__(self, other): # other / self
+        return other * self**-1
